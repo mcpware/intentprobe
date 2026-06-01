@@ -13,7 +13,7 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 ## Roadmap
 
 - [x] **1. Name + repo.** `intentprobe` (npm unscoped + `@mcpware` both free; survived competitive / SEO / trademark research against trueye, klyro, probescan, latens, etc). Repo scaffolded, Apache-2.0.
-- [~] **2. Spike: validate a modern sub-2B model's probe.** Qwen2.5-0.5B activations on the hard_v3 (100+100) and neutral (15+15) sets vs a TF-IDF baseline. Goal: confirm the pipeline works and a modern small model matches or beats the GPT-2 reference (paper: GPT-2 probe 98.5% on hard_v3 where TF-IDF is 79.5%).
+- [x] **2. Spike: validate a modern sub-2B model's probe.** Qwen2.5-0.5B activations on the hard_v3 (100+100) and neutral (15+15) sets vs a TF-IDF baseline. Goal: confirm the pipeline works and a modern small model matches or beats the GPT-2 reference (paper: GPT-2 probe 98.5% on hard_v3 where TF-IDF is 79.5%).
 - [ ] **3. Pick final base model + train production probe.** Must be sub-2B so it runs on any CPU (Gemma 4 E2B vs Qwen2.5-1.5B; Gemma is gated and needs an HF token). Re-train the probe on the chosen model — a GPT-2 probe does NOT transfer (different activation dimension and coordinate space). Export the probe weights.
 - [ ] **4. intentprobe Python CLI.** `intentprobe scan <target>`: load base model -> extract activations -> apply probe -> safe / suspicious / poisoned + confidence. Full error handling + debug logging. QA tests.
 - [ ] **5. Pre-install hook.** Claude Code PreToolUse hook + npm preinstall hook. Install once, transparent after. E2E QA: a known poisoned tool is actually blocked.
@@ -35,4 +35,18 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 
 ## Current status
 
-Step 2 in progress. Spike v2 running (Qwen2.5-0.5B on hard_v3 + neutral). Awaiting numbers to decide step 3 (final base model). This section gets updated the moment the spike returns.
+Step 2 done. v1 spike (in-distribution, optimistic) ran 5 of 8 models before OOM on 30GB Linux machine:
+
+| model | params | ms/each | hard_v3 (in-dist 5-fold) | neutral |
+|---|---|---|---|---|
+| gpt2-124m | 124M | 59ms | 0.985 | 0.967 |
+| smollm2-135m | 135M | 64ms | 0.990 | 0.900 |
+| smollm2-360m | 362M | 165ms | 0.995 | 0.967 |
+| gemma3-270m | 268M | 74ms | 0.990 | 0.900 |
+| qwen2.5-0.5b | 494M | 179ms | 0.985 | 0.933 |
+
+TF-IDF baseline: 0.790 (matches paper's 0.795). GPT-2 0.985 matches paper exactly.
+
+**These in-dist numbers are optimistic (overfit risk).** model_compare_v2.py tests cross-set generalization: trains on hard_v3, tests on independent held-out sets (hard_v1/v2/neutral/matched). Selection metric = cross-set, not in-dist.
+
+**Next: run model_compare_v2.py on M4 MacBook (40GB+ RAM)** to get the honest generalization numbers and pick the final backbone. Then train the production probe (step 3).
