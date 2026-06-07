@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -78,7 +79,7 @@ class RuntimeScanner:
 
 def scanner_command(args: argparse.Namespace) -> list[str]:
     if args.scanner_command:
-        command = args.scanner_command.split()
+        command = shlex.split(args.scanner_command)
     else:
         command = [sys.executable, "-m", "intentprobe.scanner.cli"]
     command.extend(["runtime", "serve-jsonl", "--input-format", "json", "--fail-on", args.fail_on])

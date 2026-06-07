@@ -37,7 +37,7 @@ printf '%s\n' '{"event_type":"before_tool_call","tool_name":"filesystem.read","a
 Run the safe toy-agent harness:
 
 ```bash
-python examples/runtime_toy_agent.py
+.venv/bin/python examples/runtime_toy_agent.py
 ```
 
 The toy harness uses the real runtime scanner, but only fake in-memory tools.
