@@ -86,6 +86,15 @@ The product hook path now has two runtime shapes:
 - warm JSONL process: keep the Python scanner alive, feed one payload per line,
   and reuse cached tokenizer/model/SAE objects across repeated scans.
 
+Runtime payloads are split by boundary instead of treated as one opaque blob:
+
+- `runtime_tool_definition` - the advertised tool name, description, schema, or
+  MCP/skill metadata.
+- `runtime_tool_input` - model/user generated tool-call arguments before the
+  tool runs.
+- `runtime_tool_response` - tool output/result content before it is trusted by
+  the agent loop.
+
 Secret values in MCP env/config payloads are redacted before scanner text is
 constructed. Key names remain visible because they carry risk context without
 leaking the secret itself.

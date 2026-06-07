@@ -232,6 +232,24 @@ def command_doctor(args: argparse.Namespace) -> int:
     return 0 if complete else 1
 
 
+def command_runtime_normalize(args: argparse.Namespace) -> int:
+    from .hook import command_normalize
+
+    return command_normalize(args)
+
+
+def command_runtime_scan(args: argparse.Namespace) -> int:
+    from .hook import command_scan
+
+    return command_scan(args)
+
+
+def command_runtime_serve_jsonl(args: argparse.Namespace) -> int:
+    from .hook import command_serve_jsonl
+
+    return command_serve_jsonl(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", action="store_true", help="Print scanner version and exit.")
@@ -265,6 +283,41 @@ def build_parser() -> argparse.ArgumentParser:
     doctor.add_argument("--artifact", type=Path, default=DEFAULT_ARTIFACT)
     doctor.add_argument("--pretty", action="store_true")
     doctor.set_defaults(func=command_doctor)
+
+    from .hook import add_payload_args as add_hook_payload_args
+    from .hook import add_runtime_args as add_hook_runtime_args
+
+    runtime = subparsers.add_parser(
+        "runtime",
+        help="Normalize or scan runtime tool-call events.",
+    )
+    runtime_subparsers = runtime.add_subparsers(dest="runtime_command")
+
+    runtime_normalize = runtime_subparsers.add_parser(
+        "normalize",
+        help="Normalize/redact a runtime event without loading the model.",
+    )
+    add_hook_payload_args(runtime_normalize)
+    runtime_normalize.add_argument("--pretty", action="store_true")
+    runtime_normalize.set_defaults(func=command_runtime_normalize)
+
+    runtime_scan = runtime_subparsers.add_parser(
+        "scan",
+        help="Scan one runtime event and emit a gate decision.",
+    )
+    add_hook_payload_args(runtime_scan)
+    add_hook_runtime_args(runtime_scan)
+    runtime_scan.set_defaults(func=command_runtime_scan)
+
+    runtime_serve = runtime_subparsers.add_parser(
+        "serve-jsonl",
+        help="Keep a warm scanner process and scan one runtime JSON/text event per line.",
+    )
+    add_hook_runtime_args(runtime_serve)
+    runtime_serve.add_argument("--input-format", choices=("auto", "json", "text"), default="auto")
+    runtime_serve.add_argument("--warmup", dest="warmup", action="store_true", default=True)
+    runtime_serve.add_argument("--no-warmup", dest="warmup", action="store_false")
+    runtime_serve.set_defaults(func=command_runtime_serve_jsonl)
 
     return parser
 

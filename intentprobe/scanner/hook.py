@@ -56,6 +56,11 @@ TEXT_KEYS = (
     "command",
     "script",
 )
+RUNTIME_EVENT_KEYS = ("runtime_event", "event_type", "event", "phase")
+RUNTIME_EVENT_HINTS = ("tool", "mcp", "call", "input", "argument", "response", "result", "output")
+TOOL_INPUT_KEYS = ("tool_input", "arguments", "args", "input", "parameters", "request")
+TOOL_RESPONSE_KEYS = ("tool_response", "tool_result", "response", "result", "output")
+TOOL_DEFINITION_KEYS = ("tool_definition", "definition")
 
 
 @dataclass(frozen=True)
@@ -146,6 +151,177 @@ def object_subject(mapping: dict[str, Any], subject_id: str, inherited_kind: str
     )
 
 
+def first_present(mapping: dict[str, Any], keys: tuple[str, ...]) -> tuple[str, Any] | None:
+    for key in keys:
+        if key in mapping:
+            return key, mapping[key]
+    return None
+
+
+def runtime_event_name(payload: dict[str, Any]) -> str | None:
+    for key in RUNTIME_EVENT_KEYS:
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def tool_name_from_payload(payload: dict[str, Any]) -> str | None:
+    direct = first_string(payload, ("tool_name", "name", "server", "id"))
+    if direct:
+        return direct
+    tool = payload.get("tool")
+    if isinstance(tool, str) and tool.strip():
+        return tool.strip()
+    if isinstance(tool, dict):
+        nested = first_string(tool, ("name", "id", "tool_name"))
+        if nested:
+            return nested
+    tool_call = payload.get("tool_call")
+    if isinstance(tool_call, dict):
+        nested = first_string(tool_call, ("name", "id", "tool_name"))
+        if nested:
+            return nested
+    return None
+
+
+def looks_like_runtime_event(payload: dict[str, Any]) -> bool:
+    event = runtime_event_name(payload)
+    if event and any(hint in event.lower() for hint in RUNTIME_EVENT_HINTS):
+        return True
+    if any(key in payload for key in ("tool_call", "tool_result", "tool_input", "tool_response")):
+        return True
+    has_tool_identity = isinstance(payload.get("tool_name"), str) or isinstance(payload.get("tool"), str)
+    has_runtime_io = any(key in payload for key in (*TOOL_INPUT_KEYS, *TOOL_RESPONSE_KEYS))
+    return bool(has_tool_identity and has_runtime_io)
+
+
+def runtime_part_subject(
+    *,
+    payload: dict[str, Any],
+    subject_id: str,
+    kind: str,
+    key: str,
+    value: Any,
+) -> ScanSubject:
+    event = runtime_event_name(payload)
+    tool_name = tool_name_from_payload(payload)
+    part_payload = {
+        "kind": kind,
+        "event_type": event,
+        "tool_name": tool_name,
+        "source": payload.get("source"),
+        "path": payload.get("path"),
+        key: value,
+    }
+    return object_subject(part_payload, subject_id, kind)
+
+
+def runtime_event_subjects(payload: dict[str, Any], subject_id: str) -> list[ScanSubject]:
+    subjects: list[ScanSubject] = []
+
+    tools = payload.get("tools")
+    if isinstance(tools, list):
+        for idx, tool in enumerate(tools):
+            if isinstance(tool, dict):
+                tool_id = first_string(tool, ("name", "id", "tool_name")) or str(idx + 1)
+                subjects.append(
+                    object_subject(
+                        {**tool, "kind": "runtime_tool_definition", "source": payload.get("source"), "path": payload.get("path")},
+                        f"{subject_id}-definition-{tool_id}",
+                        "runtime_tool_definition",
+                    )
+                )
+            else:
+                subjects.extend(normalize_payload(tool, f"{subject_id}-definition-{idx + 1}"))
+
+    tool = payload.get("tool")
+    if isinstance(tool, dict):
+        tool_id = first_string(tool, ("name", "id", "tool_name")) or "tool"
+        subjects.append(
+            object_subject(
+                {**tool, "kind": "runtime_tool_definition", "source": payload.get("source"), "path": payload.get("path")},
+                f"{subject_id}-definition-{tool_id}",
+                "runtime_tool_definition",
+            )
+        )
+
+    definition = first_present(payload, TOOL_DEFINITION_KEYS)
+    if definition is not None:
+        key, value = definition
+        subjects.append(
+            runtime_part_subject(
+                payload=payload,
+                subject_id=f"{subject_id}-definition",
+                kind="runtime_tool_definition",
+                key=key,
+                value=value,
+            )
+        )
+
+    tool_call = payload.get("tool_call")
+    if isinstance(tool_call, dict):
+        call_id = first_string(tool_call, ("name", "id", "tool_name")) or tool_name_from_payload(payload) or "tool_call"
+        subjects.append(
+            object_subject(
+                {
+                    "kind": "runtime_tool_call",
+                    "event_type": runtime_event_name(payload),
+                    "tool_name": tool_name_from_payload(payload) or call_id,
+                    "source": payload.get("source"),
+                    "path": payload.get("path"),
+                    "tool_call": tool_call,
+                },
+                f"{subject_id}-call-{call_id}",
+                "runtime_tool_call",
+            )
+        )
+
+    if isinstance(tool_call, dict):
+        nested_input = first_present(tool_call, TOOL_INPUT_KEYS)
+        if nested_input is not None and first_present(payload, TOOL_INPUT_KEYS) is None:
+            key, value = nested_input
+            subjects.append(
+                runtime_part_subject(
+                    payload={**payload, "tool_name": tool_name_from_payload(payload) or first_string(tool_call, ("name", "id", "tool_name"))},
+                    subject_id=f"{subject_id}-input",
+                    kind="runtime_tool_input",
+                    key=key,
+                    value=value,
+                )
+            )
+
+    tool_input = first_present(payload, TOOL_INPUT_KEYS)
+    if tool_input is not None:
+        key, value = tool_input
+        subjects.append(
+            runtime_part_subject(
+                payload=payload,
+                subject_id=f"{subject_id}-input",
+                kind="runtime_tool_input",
+                key=key,
+                value=value,
+            )
+        )
+
+    tool_response = first_present(payload, TOOL_RESPONSE_KEYS)
+    if tool_response is not None:
+        key, value = tool_response
+        subjects.append(
+            runtime_part_subject(
+                payload=payload,
+                subject_id=f"{subject_id}-response",
+                kind="runtime_tool_response",
+                key=key,
+                value=value,
+            )
+        )
+
+    if subjects:
+        return subjects
+    return [object_subject({"kind": "runtime_event", **payload}, subject_id, "runtime_event")]
+
+
 def normalize_payload(payload: Any, subject_id: str = "input") -> list[ScanSubject]:
     if isinstance(payload, str):
         return [ScanSubject(subject_id=subject_id, kind="text", text=payload)]
@@ -165,6 +341,9 @@ def normalize_payload(payload: Any, subject_id: str = "input") -> list[ScanSubje
         for idx, item in enumerate(item_groups):
             subjects.extend(normalize_payload(item, f"{subject_id}-{idx + 1}"))
         return subjects
+
+    if looks_like_runtime_event(payload):
+        return runtime_event_subjects(payload, subject_id)
 
     for servers_key in ("mcpServers", "mcp_servers"):
         servers = payload.get(servers_key)
