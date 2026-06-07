@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -74,11 +74,11 @@ DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "_results" / "activation_
 
 
 def utc_now() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def timestamp_slug() -> str:
-    return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
 def safe_slug(value: str) -> str:

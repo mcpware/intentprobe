@@ -7,7 +7,7 @@ import argparse
 import json
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -64,7 +64,7 @@ class EvalRow:
 
 
 def utc_slug() -> str:
-    return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
 def label_name(label: int) -> str:

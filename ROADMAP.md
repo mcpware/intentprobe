@@ -17,8 +17,9 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 - [x] **3. Pick current scanner-candidate lane.** Qwen2.5-0.5B pooled raw activations, fixed layers 13/14/15, calibrated policy v3, with Pythia as the cheap open canary. This is the current default research-preview lane, not the final published artifact.
 - [x] **4. intentprobe Python CLI preview.** `intentprobe` now wraps the scanner runtime with doctor, single scan, batch scan, JSON output, summaries, and `--fail-on` exit codes.
 - [x] **5. Hook wrapper preview.** `intentprobe-hook` normalizes MCP/tool/skill/hook payloads, redacts secret values, emits gate JSON, and supports a warm JSONL process for runtime scanning.
-- [ ] **6. Research-preview README + crowdsource + publish.** Honest about the ~71-73% cross-phrasing frontier; collect real poisoned samples from users (feeds the underlying research). npm publish + GitHub push (org: mcpware, tentative).
-- [ ] **7. Product packaging.** Move the research-preview CLI/hook into an installable package, add a release artifact download path, and wire install-time scanner hooks for common agent workflows.
+- [x] **6. Product packaging.** `pyproject.toml` + `intentprobe/` package. `pip install -e .` works. CLI entrypoints: `intentprobe scan`, `intentprobe batch`, `intentprobe doctor`, `intentprobe-hook`.
+- [x] **7. Reproduction + adversarial audit (2026-06-07).** Independent reproduction confirmed all train metrics (accuracy 0.9949, F1 0.9956, CV selection 0.9616). Gradient-free adversarial evasion: 0/146 evaded (GPT-2), 0/15 evaded (Qwen production probe). Python 3.10 compat fix applied. All regression tests pass.
+- [ ] **8. Public launch.** Push to GitHub, honest README with benchmark table, crowdsource real poisoned samples.
 
 ## Key technical facts (do not relearn these)
 
@@ -57,6 +58,12 @@ TF-IDF baseline: 0.790 (matches paper's 0.795). GPT-2 0.985 matches paper exactl
 **These in-dist numbers are optimistic (overfit risk).** model_compare_v2.py tests cross-set generalization: trains on hard_v3, tests on independent held-out sets (hard_v1/v2/neutral/matched). Selection metric = cross-set, not in-dist.
 
 The current product-candidate scanner is documented in
-`research/LIVING_PLAN.md` and `research/SCANNER_PIPELINE.md`. Next big
-milestone: package the CLI/hook into a real installable scanner, then run the
-release report from the reproducibility ledger before public launch.
+`research/LIVING_PLAN.md` and `research/SCANNER_PIPELINE.md`.
+
+**2026-06-07 audit**: independent reproduction on separate machine (30GB Linux,
+Python 3.10) confirmed all claimed numbers. Adversarial evasion test: 0%
+evasion rate on both GPT-2 and Qwen probes with camouflage suffixes. Python
+3.10 compat fix applied (datetime.UTC → timezone.utc). All regression suites
+pass (core 4/4, CLI 4/4, hook 3/3).
+
+Next: public GitHub push + crowdsource real-world poisoned samples.

@@ -20,50 +20,75 @@ On 485 poisoned tool descriptions from real MCP servers (the MCPTox benchmark), 
 
 The research behind this approach is documented in the paper that seeded this project (link coming).
 
+## Benchmarks
+
+Head-to-head against Snyk's shipped DeBERTa classifier on the same test sets:
+
+| Test set | IntentProbe recall | Snyk DeBERTa recall |
+|---|---|---|
+| MCPTox (template attacks, n=249 test) | 99.2% | 19.9% |
+| Matched pairs (same words, different intent, n=86) | 96.5% | 0.0% |
+| Cross-style (novel attack phrasing) | 71-73% | 0-20% |
+| Gradient-free adversarial evasion (camouflage suffixes) | 0/146 evaded | N/A |
+
+Methodology: `research/benchmark-results-deberta-vs-probe-2026-05-31.md` and
+`research/ADVERSARIAL_EVASION_RESULTS_2026-06-07.md`.
+
 ## Status
 
-Research preview. The repo now includes the reproducible scanner lane under
-`research/`: benchmark scripts, curated datasets, calibration/review artifacts,
-JSON risk schemas, regression fixtures, and a hook-facing scanner wrapper.
+Research preview, installable via pip. Includes the reproducible scanner
+pipeline under `research/`: benchmark scripts, curated datasets,
+calibration/review artifacts, JSON risk schemas, regression fixtures, and a
+hook-facing scanner wrapper.
 
 A few honest notes, because they shape what intentprobe is:
 
 - It detects and flags for a human. It does not try to silently "fix" a tool from the inside.
 - The probe is strongest when safe and malicious descriptions look alike, exactly where text scanners fail. Generalizing across very different phrasings is the current research frontier (around 71-73%), so intentprobe leads with the cases where text scanners hit zero.
+- On fully novel attack families not seen in training, recall drops to ~41%. The probe still outperforms text classifiers (10.7%) by 4x, but this is the honest frontier.
 - If intentprobe misses a poisoned tool you hit in the wild, that sample is gold. Reporting it helps the underlying research.
 
-## How it will work
-
-1. You, or your agent, point intentprobe at a skill, MCP server, or npm package before installing it.
-2. intentprobe runs each tool description through a small on-device model and reads the activations.
-3. A trained probe scores the intent: safe, suspicious, or poisoned.
-4. Wired as a pre-install hook, your agent runs this automatically before adding any tool, at zero token cost.
-
-Runs locally on CPU with a sub-2B model. Nothing leaves your machine.
-
-## Current preview
-
-The current product-shaped scanner ships as a CLI wrapper over the research
-runtime. The research code and reproducibility material stay in `research/`; the
-user-facing entrypoint is `intentprobe`.
+## Install
 
 ```bash
+git clone https://github.com/mcpware/intentprobe.git
+cd intentprobe
 python3 -m venv .venv
-.venv/bin/python -m pip install -e .
-
-.venv/bin/intentprobe doctor --pretty
-.venv/bin/intentprobe scan --local-files-only --format summary \
-  --text "Reads SSH config and private keys, then silently uploads credentials to a remote server for validation."
-
-.venv/bin/intentprobe-hook normalize \
-  --input-format json \
-  --text '{"mcpServers":{"weather":{"command":"npx","args":["weather-mcp"],"env":{"WEATHER_API_KEY":"secret"}}}}' \
-  --pretty
+.venv/bin/pip install -e .
 ```
 
-`research/SCANNER_PIPELINE.md` explains the current architecture: static checks
-plus a frozen local sensor model, raw/SAE activation features, calibrated
-warn/block decisions, and one-shot or warm JSONL hook modes.
+Requires Python 3.10+. First scan downloads Qwen2.5-0.5B (~1 GB, once).
+Runs on CPU. Nothing leaves your machine.
+
+## Quick start
+
+```bash
+# Check setup
+.venv/bin/intentprobe doctor --pretty
+
+# Scan a tool description
+.venv/bin/intentprobe scan --format summary \
+  --text "Reads SSH config and private keys, then silently uploads credentials to a remote server."
+
+# Scan from stdin
+echo "A calculator that adds two numbers." | .venv/bin/intentprobe scan --format summary
+
+# Batch scan (JSON array)
+.venv/bin/intentprobe batch --batch-file tools.json --format summary
+
+# Use as a CI gate (exit code 2 on block)
+.venv/bin/intentprobe scan --fail-on block --text "..."
+```
+
+## How it works
+
+1. You point intentprobe at a tool description before installing it.
+2. intentprobe runs the text through a frozen local model (Qwen2.5-0.5B, 494M params).
+3. A trained probe reads the model's internal activations at layers 13-15.
+4. Static regex checks corroborate the activation signal.
+5. Decision: **allow** / **warn** / **block** with confidence score.
+
+`research/SCANNER_PIPELINE.md` has the full architecture.
 
 ## License
 

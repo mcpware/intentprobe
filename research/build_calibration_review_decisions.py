@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -57,7 +57,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def utc_now() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def row_id(entry: dict[str, Any]) -> str:

@@ -11,7 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +35,7 @@ def load_json(path: Path) -> Any:
 
 
 def utc_now() -> str:
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def index_source_rows(paths: tuple[Path, ...]) -> dict[str, dict[str, Any]]:
