@@ -1,0 +1,12 @@
+{
+  "name": "safe-weather-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that returns weather forecasts for a requested city as structured JSON.",
+  "bin": {
+    "safe-weather-mcp": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": ["mcp", "weather", "forecast"]
+}

@@ -31,6 +31,7 @@ The short version:
 | `../intentprobe/scanner/core.py` | Canonical product runtime scanner: loads a cached artifact and emits JSON risk decisions. |
 | `../intentprobe/scanner/cli.py` | Canonical product CLI implementation for doctor, single scan, batch scan, summaries, JSON output, and `--fail-on` exits. |
 | `../intentprobe/scanner/hook.py` | Canonical hook-facing scanner implementation: normalizes MCP/tool/skill/hook payloads, redacts secret values, scans them, and emits gate JSON or JSONL. |
+| `../intentprobe/scanner/targets.py` | Filesystem collector for `intentprobe scan-path`: package folders, MCP configs, `SKILL.md`, README, and tool/skill JSON. |
 | `benchmarks/activation_scanner_benchmark.py` | Canonical local benchmark runner. |
 | `train_probe_artifact.py` | Trains and saves cached probe weights plus scanner metadata. |
 | `activation_scanner_core.py` | Compatibility wrapper for old reproduction commands; imports `intentprobe.scanner.core`. |
@@ -92,11 +93,18 @@ research/.venv-audit/bin/python -m intentprobe batch \
   --local-files-only \
   --batch-file research/fixtures/activation_scanner_regression_cases.json \
   --pretty
+
+research/.venv-audit/bin/python -m intentprobe scan-path \
+  research/fixtures/scan_path/poisoned-skill \
+  --local-files-only \
+  --format summary \
+  --fail-on block
 ```
 
 Use JSON output for hooks and CI. `--format summary` is only for humans. The CLI
 supports `--fail-on warn` or `--fail-on block`; matching scans exit with status
-`2` while keeping JSON on stdout.
+`2` while keeping JSON on stdout. `scan-path` extracts subjects from
+`package.json`, MCP JSON configs, `SKILL.md`, README files, and tool/skill JSON.
 
 Verify the CLI contract with:
 

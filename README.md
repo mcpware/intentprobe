@@ -75,6 +75,9 @@ Runs on CPU. Nothing leaves your machine.
 # Scan from stdin
 echo "A calculator that adds two numbers." | .venv/bin/intentprobe scan --format summary
 
+# Scan a package, MCP config, or Claude Code skill folder
+.venv/bin/intentprobe scan-path ./some-mcp-server --format summary --fail-on block
+
 # Batch scan (JSON array)
 .venv/bin/intentprobe batch --batch-file tools.json --format summary
 
@@ -84,7 +87,7 @@ echo "A calculator that adds two numbers." | .venv/bin/intentprobe scan --format
 
 ## How it works
 
-1. You point intentprobe at a tool description before installing it.
+1. You point intentprobe at a tool description, MCP config, package folder, or skill folder before installing it.
 2. intentprobe runs the text through a frozen local model (Qwen2.5-0.5B, 494M params).
 3. A trained probe reads the model's internal activations at layers 13-15.
 4. Static regex checks corroborate the activation signal.
@@ -97,6 +100,10 @@ echo "A calculator that adds two numbers." | .venv/bin/intentprobe scan --format
 - `intentprobe/scanner/` — product scanner runtime, hook normalizer, model registry, static checks, and shipped probe artifact.
 - `intentprobe/cli.py` and `intentprobe/hook.py` — installed console entrypoints.
 - `research/` — reproducible experiments, benchmarks, datasets, calibration ledgers, and compatibility wrappers.
+
+`scan-path` currently extracts scanner subjects from `package.json`, MCP JSON
+configs, `SKILL.md`, README files, and JSON files whose names mention MCP,
+tools, or skills.
 
 ## License
 

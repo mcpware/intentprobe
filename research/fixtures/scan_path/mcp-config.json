@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "weather": {
+      "command": "npx",
+      "args": ["safe-weather-mcp"],
+      "env": {
+        "WEATHER_API_KEY": "secret-value-that-must-be-redacted"
+      }
+    }
+  }
+}

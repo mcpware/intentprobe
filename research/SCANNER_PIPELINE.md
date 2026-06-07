@@ -238,6 +238,7 @@ research/train_probe_artifact.py
   -> probe_weights.npz
   -> intentprobe/scanner/core.py
   -> intentprobe/scanner/cli.py
+  -> intentprobe/scanner/targets.py, for filesystem targets
   -> JSON risk object
 ```
 
@@ -270,6 +271,7 @@ Runtime contract files:
 - `intentprobe/scanner/core.py`
 - `intentprobe/scanner/cli.py`
 - `intentprobe/scanner/hook.py`
+- `intentprobe/scanner/targets.py`
 - `research/activation_scanner_cli.py` compatibility wrapper
 - `research/activation_scanner_cli_regression.py`
 - `research/calibrate_scanner_thresholds.py`

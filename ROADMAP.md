@@ -20,7 +20,8 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 - [x] **6. Product packaging.** `pyproject.toml` + `intentprobe/` package. `pip install -e .` works. CLI entrypoints: `intentprobe scan`, `intentprobe batch`, `intentprobe doctor`, `intentprobe-hook`.
 - [x] **7. Reproduction + adversarial audit (2026-06-07).** Independent reproduction confirmed all train metrics (accuracy 0.9949, F1 0.9956, CV selection 0.9616). Gradient-free adversarial evasion: 0/146 evaded (GPT-2), 0/15 evaded (Qwen production probe). Python 3.10 compat fix applied. All regression tests pass.
 - [x] **8. Product runtime boundary.** Canonical scanner runtime moved to `intentprobe/scanner/`; default probe artifact ships with the package. Old `research.activation_scanner_*` modules remain compatibility wrappers so reproducibility commands keep working.
-- [ ] **9. Public launch.** Push to GitHub, honest README with benchmark table, crowdsource real poisoned samples.
+- [x] **9. Filesystem target scanner.** `intentprobe scan-path` scans local package folders, MCP configs, Claude Code skill folders, `package.json`, `SKILL.md`, README files, and MCP/tool/skill JSON. This is the first stranger-usable install-before-you-trust-it shape.
+- [ ] **10. Public launch.** Push to GitHub, honest README with benchmark table, crowdsource real poisoned samples.
 
 ## Key technical facts (do not relearn these)
 
@@ -35,6 +36,7 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 - Training / eval data: `research/datasets/`.
 - Product CLI wrappers: `intentprobe/cli.py` and `intentprobe/hook.py`.
 - Scanner runtime: `intentprobe/scanner/core.py`, `intentprobe/scanner/cli.py`, and `intentprobe/scanner/hook.py`.
+- Filesystem target extraction: `intentprobe/scanner/targets.py`.
 - Default shipped probe artifact: `intentprobe/scanner/artifacts/qwen-pooled-curated-core-l13-15-v2/`.
 - Research compatibility wrappers: `research/activation_scanner_core.py`, `research/activation_scanner_cli.py`, and `research/activation_scanner_hook.py`.
 - Benchmark harness: `research/benchmarks/`.
@@ -44,7 +46,7 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 
 ## Current status
 
-Step 8 done in research-preview form. The original v1 spike
+Step 9 done in research-preview form. The original v1 spike
 (in-distribution, optimistic) ran 5 of 8 models before OOM on 30GB Linux
 machine:
 

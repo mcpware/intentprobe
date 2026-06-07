@@ -171,6 +171,41 @@ def command_batch(args: argparse.Namespace) -> int:
     return exit_code_for(results, args.fail_on)
 
 
+def print_subject_summary(results: list[dict[str, Any]]) -> None:
+    for idx, row in enumerate(results, start=1):
+        subject = row.get("subject") or {}
+        risk = row.get("risk") or {}
+        label = subject.get("path") or subject.get("name") or subject.get("id") or f"subject-{idx}"
+        print(
+            f"{label}: decision={row.get('decision')} "
+            f"risk={float(row.get('risk_score', 0)):.3f} "
+            f"activation={float(risk.get('activation_score', 0)):.3f} "
+            f"static={float(risk.get('static_score', 0)):.3f}"
+        )
+        for reason in risk.get("risk_reasons", [])[:3]:
+            print(f"  - {reason}")
+
+
+def command_scan_path(args: argparse.Namespace) -> int:
+    from .hook import scan_subjects
+    from .targets import collect_subjects_from_path
+
+    subjects = collect_subjects_from_path(
+        args.path,
+        max_files=args.max_files,
+        max_file_bytes=args.max_file_bytes,
+        include_readme=args.include_readme,
+    )
+    payload = scan_subjects(subjects, args)
+    payload["mode"] = "activation_scanner_cli_path"
+    payload["target_path"] = str(args.path)
+    if args.format == "summary":
+        print_subject_summary(payload["results"])
+    else:
+        print_json(payload, args.pretty)
+    return int(payload["gate"]["exit_code"])
+
+
 def command_doctor(args: argparse.Namespace) -> int:
     complete = artifact_complete(args.artifact)
     payload: dict[str, Any] = {
@@ -213,6 +248,18 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--batch-file", type=Path, required=True)
     add_runtime_args(batch)
     batch.set_defaults(func=command_batch)
+
+    scan_path = subparsers.add_parser(
+        "scan-path",
+        help="Scan a local MCP config, package folder, skill folder, README, or manifest.",
+    )
+    scan_path.add_argument("path", type=Path, help="File or directory to scan.")
+    scan_path.add_argument("--max-files", type=int, default=40, help="Maximum candidate files to scan under a directory.")
+    scan_path.add_argument("--max-file-bytes", type=int, default=200_000, help="Maximum bytes read from each candidate file.")
+    scan_path.add_argument("--include-readme", dest="include_readme", action="store_true", default=True)
+    scan_path.add_argument("--no-readme", dest="include_readme", action="store_false")
+    add_runtime_args(scan_path)
+    scan_path.set_defaults(func=command_scan_path)
 
     doctor = subparsers.add_parser("doctor", help="Check the cached scanner artifact.")
     doctor.add_argument("--artifact", type=Path, default=DEFAULT_ARTIFACT)

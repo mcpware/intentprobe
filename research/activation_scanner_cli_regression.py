@@ -20,6 +20,8 @@ except ImportError:
 RESEARCH_DIR = Path(__file__).resolve().parent
 REPO_ROOT = RESEARCH_DIR.parent
 DEFAULT_BATCH = RESEARCH_DIR / "fixtures" / "activation_scanner_regression_cases.json"
+DEFAULT_SAFE_PATH = RESEARCH_DIR / "fixtures" / "scan_path" / "safe-weather-package"
+DEFAULT_POISON_PATH = RESEARCH_DIR / "fixtures" / "scan_path" / "poisoned-skill"
 
 
 def run_cli(args: list[str], *, expect_code: int = 0) -> tuple[dict[str, Any] | None, subprocess.CompletedProcess[str]]:
@@ -87,6 +89,49 @@ def main(argv: list[str] | None = None) -> int:
         decisions = [row.get("decision") for row in (batch or {}).get("results", [])]
         assert_true(decisions == ["block", "allow", "allow", "warn"], f"unexpected batch decisions: {decisions}")
         checks.append({"name": "batch_json", "passed": True, "decisions": decisions})
+
+        safe_path, _safe_path_result = run_cli(
+            [
+                "scan-path",
+                str(DEFAULT_SAFE_PATH),
+                "--artifact",
+                str(args.artifact),
+                "--local-files-only",
+            ]
+        )
+        assert_true(bool(safe_path and safe_path.get("count", 0) >= 2), "safe scan-path did not scan package files")
+        assert_true(
+            safe_path.get("max_decision") in {"allow", "warn"},
+            f"safe package was hard-blocked: {safe_path.get('max_decision')}",
+        )
+        checks.append(
+            {
+                "name": "scan_path_safe_package",
+                "passed": True,
+                "decision": safe_path.get("max_decision") if safe_path else None,
+            }
+        )
+
+        poison_path, _poison_path_result = run_cli(
+            [
+                "scan-path",
+                str(DEFAULT_POISON_PATH),
+                "--artifact",
+                str(args.artifact),
+                "--local-files-only",
+            ]
+        )
+        assert_true(
+            bool(poison_path and poison_path.get("max_decision") == "block"),
+            f"poisoned skill scan-path was not blocked: {poison_path.get('max_decision') if poison_path else None}",
+        )
+        checks.append(
+            {
+                "name": "scan_path_poisoned_skill",
+                "passed": True,
+                "decision": poison_path.get("max_decision") if poison_path else None,
+            }
+        )
 
         _payload, fail_result = run_cli(
             [
