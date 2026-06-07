@@ -1,0 +1,176 @@
+{
+  "artifact_id": "qwen-pooled-curated-core-l13-15-v2",
+  "artifact_version": "activation-probe-artifact-v1",
+  "created_at": "2026-06-03T09:27:39Z",
+  "dataset": {
+    "max_train_samples": null,
+    "seed": 42,
+    "summary": {
+      "families": {
+        "credential_forwarding": {
+          "clean": 6,
+          "other": 0,
+          "poisoned": 6
+        },
+        "hidden_persistence_logging": {
+          "clean": 4,
+          "other": 0,
+          "poisoned": 4
+        },
+        "instruction_chaining": {
+          "clean": 4,
+          "other": 0,
+          "poisoned": 4
+        },
+        "live_system_access": {
+          "clean": 6,
+          "other": 0,
+          "poisoned": 6
+        },
+        "network_exfiltration": {
+          "clean": 6,
+          "other": 0,
+          "poisoned": 6
+        },
+        "secret_file_access": {
+          "clean": 3,
+          "other": 0,
+          "poisoned": 3
+        },
+        "system_inventory": {
+          "clean": 6,
+          "other": 0,
+          "poisoned": 6
+        },
+        "tool_shadowing": {
+          "clean": 3,
+          "other": 0,
+          "poisoned": 3
+        }
+      },
+      "labels": {
+        "clean": 423,
+        "other": 0,
+        "poisoned": 566
+      },
+      "n": 989,
+      "pair_count": 38,
+      "source_types": {
+        "public_dataset": 16,
+        "real_carrier_adapted": 14,
+        "regression_fixture": 2,
+        "synthetic_curated": 44
+      },
+      "sources": {
+        "family_curated_v0.json": 76,
+        "hard_v2_clean.json": 20,
+        "hard_v2_poisoned.json": 20,
+        "hard_v3_matched_clean.json": 8,
+        "hard_v3_matched_poisoned.json": 8,
+        "mcptox_clean_descriptions_labeled.json": 342,
+        "mcptox_poisoned_descriptions_labeled.json": 485,
+        "neutral_clean.json": 15,
+        "neutral_poisoned.json": 15
+      },
+      "split_group_count": 38,
+      "styles": {
+        "family_curated_v0": {
+          "clean": 30,
+          "other": 0,
+          "poisoned": 30
+        },
+        "hard_v2": {
+          "clean": 20,
+          "other": 0,
+          "poisoned": 20
+        },
+        "matched": {
+          "clean": 8,
+          "other": 0,
+          "poisoned": 8
+        },
+        "mcptox": {
+          "clean": 342,
+          "other": 0,
+          "poisoned": 485
+        },
+        "neutral": {
+          "clean": 15,
+          "other": 0,
+          "poisoned": 15
+        },
+        "skillinject_curated": {
+          "clean": 8,
+          "other": 0,
+          "poisoned": 8
+        }
+      }
+    },
+    "train_source": "pooled-curated-core"
+  },
+  "extractor": "raw",
+  "feature_details": {
+    "batch_size": 16,
+    "device": "cpu",
+    "dtype": "float32",
+    "extract_elapsed_seconds": 36.922180209017824,
+    "gated": false,
+    "hf_model_id": "Qwen/Qwen2.5-0.5B",
+    "max_length": 256,
+    "n_hidden_layers": 24
+  },
+  "feature_dim": 2688,
+  "feature_kind": "raw_activation",
+  "layer_policy": {
+    "candidate_layers": [
+      13,
+      14,
+      15
+    ],
+    "layer": "concat:13,14,15",
+    "mode": "concat",
+    "selected_k": 3,
+    "selected_layers": [
+      13,
+      14,
+      15
+    ],
+    "selection_score": 0.9615648874532121,
+    "selector": "cv"
+  },
+  "model_id": "Qwen/Qwen2.5-0.5B",
+  "probe": {
+    "algorithm": "logistic_regression",
+    "classes": [
+      0,
+      1
+    ],
+    "max_iter": 3000,
+    "train_metrics": {
+      "accuracy": 0.9949443882709808,
+      "f1": 0.9955634427684117,
+      "precision": 1.0,
+      "recall": 0.991166077738516
+    }
+  },
+  "sae": null,
+  "scanner_version": "activation-scanner-core-2026-06-03-static-v2",
+  "sensor": {
+    "default_depths": [
+      0.25,
+      0.4,
+      0.55
+    ],
+    "default_layers": null,
+    "gated": false,
+    "hf_model_id": "Qwen/Qwen2.5-0.5B",
+    "kind": "transformer",
+    "name": "qwen2.5-0.5b",
+    "notes": "Small local fallback seen in earlier experiments."
+  },
+  "sensor_model": "qwen2.5-0.5b",
+  "thresholds": {
+    "block": 0.85,
+    "warn": 0.3
+  }
+}

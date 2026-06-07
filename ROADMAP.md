@@ -14,10 +14,11 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 
 - [x] **1. Name + repo.** `intentprobe` (npm unscoped + `@mcpware` both free; survived competitive / SEO / trademark research against trueye, klyro, probescan, latens, etc). Repo scaffolded, Apache-2.0.
 - [x] **2. Spike: validate a modern sub-2B model's probe.** Qwen2.5-0.5B activations on the hard_v3 (100+100) and neutral (15+15) sets vs a TF-IDF baseline. Goal: confirm the pipeline works and a modern small model matches or beats the GPT-2 reference (paper: GPT-2 probe 98.5% on hard_v3 where TF-IDF is 79.5%).
-- [ ] **3. Pick final base model + train production probe.** Must be sub-2B so it runs on any CPU (Gemma 4 E2B vs Qwen2.5-1.5B; Gemma is gated and needs an HF token). Re-train the probe on the chosen model — a GPT-2 probe does NOT transfer (different activation dimension and coordinate space). Export the probe weights.
-- [ ] **4. intentprobe Python CLI.** `intentprobe scan <target>`: load base model -> extract activations -> apply probe -> safe / suspicious / poisoned + confidence. Full error handling + debug logging. QA tests.
-- [ ] **5. Pre-install hook.** Claude Code PreToolUse hook + npm preinstall hook. Install once, transparent after. E2E QA: a known poisoned tool is actually blocked.
+- [x] **3. Pick current scanner-candidate lane.** Qwen2.5-0.5B pooled raw activations, fixed layers 13/14/15, calibrated policy v3, with Pythia as the cheap open canary. This is the current default research-preview lane, not the final published artifact.
+- [x] **4. intentprobe Python CLI preview.** `research.activation_scanner_cli` supports doctor, single scan, batch scan, JSON output, summaries, and `--fail-on` exit codes.
+- [x] **5. Hook wrapper preview.** `research.activation_scanner_hook` normalizes MCP/tool/skill/hook payloads, redacts secret values, emits gate JSON, and supports a warm JSONL process for runtime scanning.
 - [ ] **6. Research-preview README + crowdsource + publish.** Honest about the ~71-73% cross-phrasing frontier; collect real poisoned samples from users (feeds the underlying research). npm publish + GitHub push (org: mcpware, tentative).
+- [ ] **7. Product packaging.** Move the research-preview CLI/hook into an installable package, add a release artifact download path, and wire install-time scanner hooks for common agent workflows.
 
 ## Key technical facts (do not relearn these)
 
@@ -29,13 +30,18 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 
 ## Where things live
 
-- Training / eval data: the MCPTox + matched-pair / hard / neutral benchmark sets from the activation-probe research (not yet vendored into this repo).
-- Spike / exploration code: kept outside the repo during R&D; the cleaned-up training script will land in `training/`.
+- Training / eval data: `research/datasets/`.
+- Scanner preview: `research/activation_scanner_core.py`, `research/activation_scanner_cli.py`, and `research/activation_scanner_hook.py`.
+- Benchmark harness: `research/benchmarks/`.
+- Reproducibility ledger: `research/PRODUCT_REPRODUCIBILITY_LEDGER_2026-06-03.md`.
+- Spike history: `training/model_compare.py` and `training/model_compare_v2.py`.
 - Research paper: "Can Model Internals Detect MCP Tool Poisoning That Text Analysis Cannot?"
 
 ## Current status
 
-Step 2 done. v1 spike (in-distribution, optimistic) ran 5 of 8 models before OOM on 30GB Linux machine:
+Step 5 done in research-preview form. The original v1 spike
+(in-distribution, optimistic) ran 5 of 8 models before OOM on 30GB Linux
+machine:
 
 | model | params | ms/each | hard_v3 (in-dist 5-fold) | neutral |
 |---|---|---|---|---|
@@ -49,4 +55,7 @@ TF-IDF baseline: 0.790 (matches paper's 0.795). GPT-2 0.985 matches paper exactl
 
 **These in-dist numbers are optimistic (overfit risk).** model_compare_v2.py tests cross-set generalization: trains on hard_v3, tests on independent held-out sets (hard_v1/v2/neutral/matched). Selection metric = cross-set, not in-dist.
 
-**Next: run model_compare_v2.py on M4 MacBook (40GB+ RAM)** to get the honest generalization numbers and pick the final backbone. Then train the production probe (step 3).
+The current product-candidate scanner is documented in
+`research/LIVING_PLAN.md` and `research/SCANNER_PIPELINE.md`. Next big
+milestone: package the CLI/hook into a real installable scanner, then run the
+release report from the reproducibility ledger before public launch.

@@ -22,7 +22,9 @@ The research behind this approach is documented in the paper that seeded this pr
 
 ## Status
 
-Early development. This is a research preview, not yet published.
+Research preview. The repo now includes the reproducible scanner lane under
+`research/`: benchmark scripts, curated datasets, calibration/review artifacts,
+JSON risk schemas, regression fixtures, and a hook-facing scanner wrapper.
 
 A few honest notes, because they shape what intentprobe is:
 
@@ -38,6 +40,22 @@ A few honest notes, because they shape what intentprobe is:
 4. Wired as a pre-install hook, your agent runs this automatically before adding any tool, at zero token cost.
 
 Runs locally on CPU with a sub-2B model. Nothing leaves your machine.
+
+## Current preview
+
+The current product-shaped path lives in `research/`.
+
+```bash
+python3 -m venv research/.venv-audit
+research/.venv-audit/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+research/.venv-audit/bin/python -m pip install "transformers>=4.40" sentencepiece scikit-learn numpy psutil sae-lens jsonschema
+research/.venv-audit/bin/python -m research.activation_scanner_cli_regression --pretty
+research/.venv-audit/bin/python -m research.activation_scanner_hook_regression --pretty
+```
+
+`research/SCANNER_PIPELINE.md` explains the current architecture: static checks
+plus a frozen local sensor model, raw/SAE activation features, calibrated
+warn/block decisions, and one-shot or warm JSONL hook modes.
 
 ## License
 
