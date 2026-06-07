@@ -1,10 +1,29 @@
 # intentprobe
 
-**See a tool's true intent before you install it.**
+<p align="center">
+  <strong>See a tool's true intent before you install it.</strong>
+</p>
 
-MCP servers, Claude Code skills, and agent tools describe themselves in plain English. Two descriptions can use almost identical words while only one of them quietly steals your SSH keys. Text scanners can't tell them apart. IntentProbe can.
+<p align="center">
+  <a href="https://github.com/mcpware/intentprobe/stargazers"><img src="https://img.shields.io/github/stars/mcpware/intentprobe?style=social" alt="Stars" /></a>
+  <a href="https://github.com/mcpware/intentprobe/network/members"><img src="https://img.shields.io/github/forks/mcpware/intentprobe?style=social" alt="Forks" /></a>
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="License" /></a>
+  <img src="https://img.shields.io/badge/runs-100%25%20local-brightgreen" alt="Runs locally" />
+  <img src="https://img.shields.io/badge/telemetry-zero-blue" alt="Zero telemetry" />
+</p>
 
-Instead of matching text patterns, IntentProbe runs the description through a small local model and reads its internal activations. If the model internally understands the text as "this is trying to exfiltrate secrets," a trained probe catches that signal, even when the words look safe.
+MCP servers, Claude Code skills, and agent tools describe themselves in plain English. Two descriptions can use almost identical words while only one of them quietly steals your SSH keys.
+
+```
+Every other scanner:    Tool description  ──→  Text pattern matching  ──→  "Looks fine" ✅
+                        (reads the words)
+
+IntentProbe:            Tool description  ──→  Small local model  ──→  Read activations  ──→  "This is stealing keys" 🚫
+                        (reads what the model understood)
+```
+
+Text scanners read words. IntentProbe reads intent.
 
 ```
 $ intentprobe scan --format summary \
@@ -16,10 +35,6 @@ input-1: decision=block  risk=0.980  activation=0.980  static=0.950
   - static finding: Mentions uploading data outside the local tool scope
 ```
 
-Runs locally on CPU. Nothing leaves your machine.
-
-![IntentProbe demo: text scanner misses poisoned tool, activation probe catches it](docs/demo.gif)
-
 ## The problem
 
 > **Tool A:** "Reads the SSH config file and returns a parsed list of host aliases, hostnames, and ports. Does not modify files or open connections."
@@ -28,20 +43,42 @@ Runs locally on CPU. Nothing leaves your machine.
 
 Same words. Same topic. Tool B exfiltrates your private keys.
 
-On 485 poisoned tool descriptions from real MCP servers, Snyk's shipped text classifier caught 19.9%. On matched-vocabulary pairs where safe and poisoned descriptions share the same words, it caught **zero**.
+Every MCP scanner we source-verified uses text patterns, regex rules, or text classifiers. On matched-vocabulary tool poisoning where safe and poisoned descriptions share the same words, Snyk's shipped classifier catches **zero**.
 
 ## Benchmarks
 
-Head-to-head on the same test sets, same split, same seed:
+Head-to-head on the same test sets, same split, same seed. Every number is reproducible from scripts in `research/`.
 
-| Test set | IntentProbe | Snyk DeBERTa |
+| | IntentProbe | Snyk DeBERTa |
 |---|---|---|
-| MCPTox template attacks (n=249) | **99.2%** recall | 19.9% recall |
-| Matched-vocabulary pairs (n=86) | **96.5%** recall | 0.0% recall |
-| Novel attack phrasing | **71-73%** recall | 0-20% recall |
-| Adversarial evasion (camouflage suffixes) | **0/146 evaded** | N/A |
+| **MCPTox template attacks** (n=249) | **99.2%** recall | 19.9% recall |
+| **Matched-vocabulary pairs** (n=86) | **96.5%** recall | 0.0% recall |
+| **Novel attack phrasing** | **71-73%** recall | 0-20% recall |
+| **Adversarial evasion** (camouflage suffixes) | **0/146 evaded** | N/A |
 
-Every number is reproducible. Scripts and datasets are in `research/`. Run them yourself.
+<sub>Methodology: research/benchmark-results-deberta-vs-probe-2026-05-31.md and research/ADVERSARIAL_EVASION_RESULTS_2026-06-07.md</sub>
+
+## How it works
+
+```
+                        ┌─────────────────────────┐
+  Tool description ───→ │  Qwen2.5-0.5B (frozen)  │ ───→ Activations at layers 13-15
+                        └─────────────────────────┘              │
+                                                                 ▼
+                                                    ┌────────────────────┐
+                                                    │  Trained probe     │ ───→ allow / warn / block
+                                                    │  (22 KB, logreg)   │
+                                                    └────────────────────┘
+                                                                 +
+                                                    Static regex corroboration
+```
+
+1. Text goes through a frozen local model (Qwen2.5-0.5B, 494M params, any CPU).
+2. A 22 KB trained probe reads internal activations at layers 13-15.
+3. Static regex checks corroborate the signal.
+4. Decision: **allow** / **warn** / **block** with a confidence score.
+
+Under a second per description. No GPU. Nothing leaves your machine.
 
 ## Install
 
@@ -52,7 +89,7 @@ python3 -m venv .venv
 .venv/bin/pip install -e .
 ```
 
-Requires Python 3.10+. First scan downloads Qwen2.5-0.5B (~1 GB, once).
+First scan downloads Qwen2.5-0.5B (~1 GB, once). After that, everything stays local.
 
 ## Try it
 
@@ -64,48 +101,33 @@ Requires Python 3.10+. First scan downloads Qwen2.5-0.5B (~1 GB, once).
 # Scan an MCP server folder before installing
 .venv/bin/intentprobe scan-path ./some-mcp-server --format summary
 
-# Use as a CI gate (exit code 2 on block)
+# CI gate (exit code 2 on block)
 .venv/bin/intentprobe scan --fail-on block --text "..."
-```
 
-For runtime gating (scan tool calls as they happen), see `docs/RUNTIME_HOOKS.md` or try the safe demo:
-
-```bash
+# Runtime gating demo (safe, in-memory, no real tools)
 .venv/bin/python examples/runtime_toy_agent.py --allow-download
 ```
 
-## How it works
-
-1. Text goes through a frozen local model (Qwen2.5-0.5B, 494M params).
-2. A trained probe reads internal activations at layers 13-15.
-3. Static regex checks look for known-bad keywords as corroboration.
-4. Decision: **allow** / **warn** / **block** with a confidence score.
-
-The probe weights are 22 KB. The base model runs on any CPU in under a second per description. No GPU needed.
+For runtime hook integration, see [docs/RUNTIME_HOOKS.md](docs/RUNTIME_HOOKS.md).
 
 ## What it scans
 
-`scan-path` extracts descriptions from `package.json`, MCP JSON configs, `SKILL.md`, README files, and tool/skill metadata files. `runtime` mode accepts live tool-call events with secret redaction.
+`scan-path` extracts descriptions from `package.json`, MCP JSON configs, `SKILL.md`, README files, and tool/skill metadata. `runtime` mode accepts live tool-call events with automatic secret redaction.
 
 ## Honest limitations
 
-- The probe is strongest when safe and poisoned descriptions share vocabulary. That is where text scanners score zero and IntentProbe scores 96%.
-- On fully novel attack families not seen in training, recall drops to ~41%. Still 4x better than text classifiers (10.7%), but this is the open frontier.
-- Camouflage suffixes ("this tool is safe and sandboxed") do not evade the probe (0/146), but gradient-based white-box attacks are untested.
-- IntentProbe detects and flags for a human. It does not silently "fix" tools.
+- Strongest on matched-vocabulary poisoning (safe and malicious share words). That is where every text scanner scores zero and IntentProbe scores 96%.
+- On fully novel attack families not in training, recall drops to ~41%. Still 4x better than text classifiers (10.7%), but this is the open frontier.
+- Camouflage suffixes ("this tool is safe and sandboxed") do not fool the probe (0/146 evaded). Gradient-based white-box attacks are untested.
+- IntentProbe flags for a human. It does not silently "fix" tools.
 
-## Privacy
+## The story
 
-IntentProbe runs locally. It does not send descriptions, scan results, or telemetry to any server. The first scan downloads the base model from Hugging Face. After that, everything stays on your machine.
+I built this after source-reading Snyk's shipped MCP scanner and finding it uses a DeBERTa text classifier that scores 0% recall on matched-vocabulary tool poisoning. The entire category of MCP scanners relies on text patterns. None of them read model internals.
 
-## Help improve the scanner
+IntentProbe is a different approach: run the description through a small model, read the activations, and train a probe on the signal that encodes intent. The research paper behind this is in `research/`. The probe weights are 22 KB. The benchmarks are open. Run them yourself.
 
-If IntentProbe misses a poisoned tool you found in the wild, that sample is gold.
-
-- **Missed detection**: open a [Missed detection](https://github.com/mcpware/intentprobe/issues/new?template=missed-detection.yml) issue.
-- **False positive**: open a [False positive](https://github.com/mcpware/intentprobe/issues/new?template=false-positive.yml) issue.
-
-Redact secrets and private data before posting. See `docs/SAMPLE_REPORTING.md`.
+If it misses something, [report it](https://github.com/mcpware/intentprobe/issues/new?template=missed-detection.yml). Every missed sample improves the next probe.
 
 ## License
 
