@@ -1,7 +1,7 @@
 # IntentProbe
 
 <p align="center">
-  <strong>The only MCP scanner that reads what the model understood, not what the text says.</strong>
+  <strong>The First and Only MCP scanner that reads what the model understood, not what the text says.</strong>
 </p>
 
 <p align="center">
