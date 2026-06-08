@@ -38,6 +38,12 @@
 
 Every MCP scanner we source-verified uses text patterns, regex, or text classifiers. On matched-vocabulary tool poisoning where safe and poisoned descriptions share the same words, Snyk's shipped classifier catches **zero**.
 
+## Three approaches to scanning
+
+<p align="center">
+  <img src="docs/three-approaches.png" width="700" alt="Three approaches: Text Classifier (reads words, 0-20%), LLM-as-Judge (asks the model), Activation Probing (reads intent, 96.5%)" />
+</p>
+
 ## Competitive landscape
 
 > **Others read text, ask the cloud, ask another LLM, or match patterns. We read the model's internal activations after it processes the tool description — detecting whether it entered a "this tool wants to steal / escalate / exfiltrate" state.**
