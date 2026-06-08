@@ -1,7 +1,7 @@
 # IntentProbe
 
 <p align="center">
-  <strong>See a tool's true intent before you install it.</strong>
+  <strong>The first open-source activation-probe-based scanner for MCP/tool poisoning.</strong>
 </p>
 
 <p align="center">
@@ -14,8 +14,22 @@
 </p>
 
 <p align="center">
-  <img src="docs/diagram.png" width="700" alt="DeBERTa reads words. IntentProbe reads intent." />
+  <img src="docs/diagram.png" width="700" alt="Text scanners read words. IntentProbe reads activations." />
 </p>
+
+IntentProbe is a local CLI scanner and runtime hook for AI agent tools, MCP
+servers, and skills. It does not stop at text patterns. It runs a tool
+description through a small frozen model, opens the hidden layers, and probes
+the activation state for dangerous intent: credential access, exfiltration,
+escalation, hidden persistence, or tool shadowing.
+
+**Text scanners read the prompt surface. IntentProbe reads the model state after
+the tool has been understood.**
+
+Public MCP scanners we found use rules, text classifiers, proxies, policy
+checks, LLM judges, or opaque cloud APIs. We did not find another installable
+local MCP/tool scanner whose primary signal is a model-internal activation
+probe; see [docs/COMPETITIVE_LANDSCAPE.md](docs/COMPETITIVE_LANDSCAPE.md).
 
 ---
 
@@ -74,7 +88,7 @@ DeBERTa text-classifier baseline catches **zero**.
 | **Text classifier** | ProtectAI DeBERTa, Meta Prompt Guard | Classify text as benign / injection / jailbreak | Learns text patterns; fails when words are the same but intent differs | Same-words benchmark: IntentProbe **96.6% F1** vs DeBERTa **0% F1**. |
 | **LLM-as-judge** | NeMo self-check, OpenAI Guardrails, Promptfoo grader | Ask another LLM: "is this poisoned?" | Expensive, slow, burns tokens; non-deterministic; the judge LLM can be fooled by the same poisoning | **Fixed local artifact.** Same input always gets the same deterministic score. |
 | **Red-team / eval framework** | garak, Giskard, Promptfoo red team | Generate attacks, test if app/model breaks | Great for audits, but not a "scan before install" daily workflow | IntentProbe is a **CLI scanner + runtime hook** — blocks before install and before each tool call. |
-| **IntentProbe** | **Us** | Small local model reads tool description, extract layers 13-15 activations, probe classifies intent | v0 still improving wild-data generalization | **First product-shaped activation-probe scanner for MCP/tool poisoning.** Local, reproducible, fundamentally different from text scanning. |
+| **IntentProbe** | **Us** | Small local model reads tool description, extracts layers 13-15 activations, probe classifies intent | v0 still improving wild-data generalization | **First open-source activation-probe-based scanner we found for MCP/tool poisoning.** Local, reproducible, fundamentally different from text scanning. |
 
 Detailed source-backed comparison: [docs/COMPETITIVE_LANDSCAPE.md](docs/COMPETITIVE_LANDSCAPE.md)
 
@@ -288,7 +302,9 @@ I built this after source-reading the strongest public MCP scanner path I could
 reproduce locally: a DeBERTa text-classifier baseline that scores 0% recall on
 matched-vocabulary tool poisoning. Current vendor API backends are opaque; this
 repo publishes the benchmark path and scanner artifact. None of the public MCP
-scanner sources/docs we checked read model internals.
+scanner sources/docs we checked read model-internal activations as the primary
+signal. That is the narrow "first" claim: installable local MCP/tool scanner,
+activation probe as the main detection signal, reproducible benchmark artifacts.
 
 IntentProbe is a different approach: run the description through a small model, read the activations, and train a probe on the signal that encodes intent. The research paper behind this is [published on Zenodo](https://doi.org/10.5281/zenodo.19990741). The probe weights are 22 KB. The benchmarks are open. Run them yourself.
 
