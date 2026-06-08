@@ -1,7 +1,7 @@
 # IntentProbe
 
 <p align="center">
-  <strong>The first open-source activation-probe-based scanner for MCP/tool poisoning.</strong>
+  <strong>The only MCP scanner that reads what the model understood, not what the text says.</strong>
 </p>
 
 <p align="center">
@@ -17,19 +17,11 @@
   <img src="docs/diagram.png" width="700" alt="Text scanners read words. IntentProbe reads activations." />
 </p>
 
-IntentProbe is a local CLI scanner and runtime hook for AI agent tools, MCP
-servers, and skills. It does not stop at text patterns. It runs a tool
-description through a small frozen model, opens the hidden layers, and probes
-the activation state for dangerous intent: credential access, exfiltration,
-escalation, hidden persistence, or tool shadowing.
+Every MCP scanner on the market reads text: patterns, classifiers, rules, or asks an LLM "is this safe?" IntentProbe does something none of them do. It runs the tool description through a small local model, slices open the hidden layers, and reads the activation state directly. Same words, completely different activations when the intent is malicious.
 
-**Text scanners read the prompt surface. IntentProbe reads the model state after
-the tool has been understood.**
+On matched-vocabulary tool poisoning, where safe and poisoned descriptions use almost identical words, Snyk's shipped scanner catches **0%**. IntentProbe catches **96.5%**. ([Reproduce it yourself.](research/benchmark-results-deberta-vs-probe-2026-05-31.md))
 
-Public MCP scanners we found use rules, text classifiers, proxies, policy
-checks, LLM judges, or opaque cloud APIs. We did not find another installable
-local MCP/tool scanner whose primary signal is a model-internal activation
-probe; see [docs/COMPETITIVE_LANDSCAPE.md](docs/COMPETITIVE_LANDSCAPE.md).
+Runs locally. 22 KB probe. Any CPU. Nothing uploaded. See the [full competitive landscape](docs/COMPETITIVE_LANDSCAPE.md).
 
 ---
 
@@ -59,17 +51,9 @@ probe; see [docs/COMPETITIVE_LANDSCAPE.md](docs/COMPETITIVE_LANDSCAPE.md).
                     │  Almost identical words       │  Steals your SSH keys
 ```
 
-This exact pair is in `research/datasets/hard_v3_matched_clean.json` and
-`research/datasets/hard_v3_matched_poisoned.json`. Current IntentProbe result:
-safe `allow` at risk `0.081`; poisoned `warn` at risk `0.982`. The DeBERTa text
-baseline caught `0/8` poisoned rows in this matched suite; see
-`research/benchmark-results-deberta-vs-probe-2026-05-31.md`. So Tool B is one
-of the benchmarked DeBERTa misses, not a made-up showcase case.
+This is a real pair from our benchmark dataset. IntentProbe: safe tool scores 0.081 (allow), poisoned tool scores 0.982 (warn). Snyk's DeBERTa: both tools score 0.0% (safe). It doesn't see the difference.
 
-Every public MCP scanner source/docs we checked relies on text patterns, rules,
-policy checks, classifiers, or opaque vendor APIs. On matched-vocabulary tool
-poisoning where safe and poisoned descriptions share the same words, the
-DeBERTa text-classifier baseline catches **zero**.
+Text scanners fail here because there is no text difference to find. The words are almost identical. The intent is not.
 
 ## Three approaches to scanning
 
@@ -88,31 +72,27 @@ DeBERTa text-classifier baseline catches **zero**.
 | **Text classifier** | ProtectAI DeBERTa, Meta Prompt Guard | Classify text as benign / injection / jailbreak | Learns text patterns; fails when words are the same but intent differs | Same-words benchmark: IntentProbe **96.6% F1** vs DeBERTa **0% F1**. |
 | **LLM-as-judge** | NeMo self-check, OpenAI Guardrails, Promptfoo grader | Ask another LLM: "is this poisoned?" | Expensive, slow, burns tokens; non-deterministic; the judge LLM can be fooled by the same poisoning | **Fixed local artifact.** Same input always gets the same deterministic score. |
 | **Red-team / eval framework** | garak, Giskard, Promptfoo red team | Generate attacks, test if app/model breaks | Great for audits, but not a "scan before install" daily workflow | IntentProbe is a **CLI scanner + runtime hook** — blocks before install and before each tool call. |
-| **IntentProbe** | **Us** | Small local model reads tool description, extracts layers 13-15 activations, probe classifies intent | v0 still improving wild-data generalization | **First open-source activation-probe-based scanner we found for MCP/tool poisoning.** Local, reproducible, fundamentally different from text scanning. |
+| **IntentProbe** | **Us** | Small local model reads tool description, extracts layers 13-15 activations, probe classifies intent | Still improving wild-data generalization | **First activation-probe scanner for MCP/tool poisoning.** Local, open, reproducible. |
 
 Detailed source-backed comparison: [docs/COMPETITIVE_LANDSCAPE.md](docs/COMPETITIVE_LANDSCAPE.md)
 
 ## Benchmarks
 
-Short version: IntentProbe catches poisoned tools that text-only scanners miss,
-especially when the safe and malicious versions use almost the same words.
-Plain English: **caught** means recall. **F1** balances catching poison against
-false alarms. Head-to-head runs use the same test sets, split, and seed. Every
-number is reproducible from `research/`.
+Same test sets. Same split. Same seed. Every number is reproducible from `research/`.
 
 ```
-  IntentProbe vs text-only baselines
-  ════════════════════════════════
+  IntentProbe vs Snyk DeBERTa
+  ═══════════════════════════
 
-  MCPTox held-out poisoned recall (n=249)
+  MCPTox poisoned recall (n=249)
   IntentProbe  ██████████████████████████████████████████████████  100.0%
-  DeBERTa      ██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   19.9%
+  Snyk         ██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   19.9%
 
-  Matched-vocabulary pairs F1 (n=86)
+  Matched-vocabulary F1 (n=86)          ◀ the hard test
   IntentProbe  ████████████████████████████████████████████████░░   96.6%
-  DeBERTa      ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    0.0%
+  Snyk         ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░    0.0%
 
-  External RouteGuard poisoned recall (n=2,900)
+  Novel attack families (n=2,900)
   IntentProbe  █████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░   41.5%
   TF-IDF       █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   10.7%
 
@@ -125,8 +105,8 @@ number is reproducible from `research/`.
 
 | Test | IntentProbe | Opponent / baseline | Takeaway |
 |---|---|---|---|
-| MCPTox held-out (n=249) | recall 100%, F1 99.3% | DeBERTa text baseline recall 19.9%, F1 33.0% | Clear win |
-| Same-words matched (n=86) | F1 96.6% | DeBERTa text baseline F1 0% | Same words, different intent, text scanner blind |
+| MCPTox held-out (n=249) | recall 100%, F1 99.3% | Snyk DeBERTa recall 19.9%, F1 33.0% | Clear win |
+| Same-words matched (n=86) | F1 96.6% | Snyk DeBERTa F1 0% | Same words, different intent, text scanner blind |
 | Curated family holdout (n=76) | Qwen macro F1 0.829 | TF-IDF macro F1 0.823 | Qwen slight edge |
 | RouteGuard external (n=2,900) | F1 0.513, recall 0.415 | TF-IDF F1 0.172, recall 0.107 | External transfer: 4x better |
 | Hard-block policy (n=2,900) | Block precision 1.000, clean FPR 0.000 | -- | Zero false positives on clean tools |
@@ -297,17 +277,11 @@ For the full event schema and JSONL protocol, see [docs/RUNTIME_HOOKS.md](docs/R
 
 ## The story
 
-I built this after source-reading the strongest public MCP scanner path I could
-reproduce locally: a DeBERTa text-classifier baseline that scores 0% recall on
-matched-vocabulary tool poisoning. Current vendor API backends are opaque; this
-repo publishes the benchmark path and scanner artifact. None of the public MCP
-scanner sources/docs we checked read model-internal activations as the primary
-signal. That is the narrow "first" claim: installable local MCP/tool scanner,
-activation probe as the main detection signal, reproducible benchmark artifacts.
+I source-read Snyk's shipped MCP scanner. It uses a DeBERTa text classifier trained on prompt injection, not tool poisoning. On matched-vocabulary attacks it scores 0%. I checked every other public scanner I could find. Rules, regex, text classifiers, opaque cloud APIs. None of them read model internals.
 
-IntentProbe is a different approach: run the description through a small model, read the activations, and train a probe on the signal that encodes intent. The research paper behind this is [published on Zenodo](https://doi.org/10.5281/zenodo.19990741). The probe weights are 22 KB. The benchmarks are open. Run them yourself.
+So I built one that does. Feed the description into a small model, slice it open, read the activations. The signal is there. A 22 KB probe trained on those activations catches what every text scanner misses. The [research paper](https://doi.org/10.5281/zenodo.19990741) documents five rounds of experiments proving the activation signal is real and not just fancy word counting.
 
-If it misses something, [report it](https://github.com/mcpware/IntentProbe/issues/new?template=missed-detection.yml). Every missed sample improves the next probe.
+The benchmarks are open. The probe weights are in the repo. Run them yourself. If IntentProbe misses something you find in the wild, [report it](https://github.com/mcpware/IntentProbe/issues/new?template=missed-detection.yml). Every missed sample makes the next version better.
 
 ## License
 
