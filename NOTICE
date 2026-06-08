@@ -1,0 +1,12 @@
+IntentProbe
+Copyright 2026 Geass Inc.
+
+Licensed under the Apache License, Version 2.0.
+See LICENSE for the full license text.
+
+This product includes software developed by Geass Inc.
+(https://github.com/mcpware/IntentProbe)
+
+The activation probe methodology is described in:
+"Can Model Internals Detect MCP Tool Poisoning That Text Analysis Cannot?"
+DOI: 10.5281/zenodo.19990741
