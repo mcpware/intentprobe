@@ -85,12 +85,15 @@ cd "$sdist_src"/intentprobe-0.1.0
 python3 -m zipfile -l "$wheel_dist"/intentprobe-0.1.0-py3-none-any.whl | \
   rg 'probe_weights|metadata.json|targets.py|entry_points'
 python3 -m tarfile -l "$sdist_dist"/intentprobe-0.1.0.tar.gz | \
-  rg 'probe_weights|metadata.json|targets.py|SECURITY.md|SAMPLE_REPORTING|RELEASE_CHECKLIST|RUNTIME_HOOKS|OPERATOR_DECISIONS|EVIDENCE_PACKET|runtime_toy_agent'
+  rg 'probe_weights|metadata.json|targets.py|SECURITY.md|SAMPLE_REPORTING|RELEASE_CHECKLIST|RUNTIME_HOOKS|OPERATOR_DECISIONS|EVIDENCE_PACKET|PYPI_RELEASE|runtime_toy_agent'
 ```
 
 Build the release wheel from the freshly extracted sdist. The repo can have an
 ignored `build/` directory from setuptools, and direct local wheel builds may
 reuse stale `build/lib` contents.
+
+PyPI notes: [docs/PYPI_RELEASE.md](PYPI_RELEASE.md)
+npm notes: [docs/NPM_RELEASE.md](NPM_RELEASE.md)
 
 ## Hygiene
 

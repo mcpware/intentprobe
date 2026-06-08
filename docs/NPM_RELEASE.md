@@ -41,7 +41,25 @@ npx intentprobe --help
 Only after the package is live should the root README advertise `npx
 intentprobe ...` as the primary install path.
 
+## Local gate status seen on 2026-06-08
+
+Passed:
+
+- `INTENTPROBE_PYTHON=.venv/bin/python node npm/bin/intentprobe.mjs --help`
+- `npm --prefix npm run check`
+- `npm --prefix npm run pack:dry`
+- `npm publish ./npm --dry-run`
+
+Observed but time-bound:
+
+- `npm view intentprobe name version dist-tags --json` returned `E404` on
+  2026-06-08. Treat this as a local check, not a durable public claim about name
+  availability.
+
 ## Auth blocker seen locally
 
 `npm whoami` returned `ENEEDAUTH`, so publishing needs an npm login or npm
 automation token before this can go live.
+
+The dry-run publish can still show the package tarball and publish target, but
+the real publish requires npm auth.
