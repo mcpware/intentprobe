@@ -42,7 +42,10 @@
                     │  Almost identical words       │  Steals your SSH keys
 ```
 
-Every MCP scanner we source-verified uses text patterns, regex, or text classifiers. On matched-vocabulary tool poisoning where safe and poisoned descriptions share the same words, Snyk's shipped classifier catches **zero**.
+Every public MCP scanner source/docs we checked relies on text patterns, rules,
+policy checks, classifiers, or opaque vendor APIs. On matched-vocabulary tool
+poisoning where safe and poisoned descriptions share the same words, the
+DeBERTa text-classifier baseline catches **zero**.
 
 ## Three approaches to scanning
 
@@ -58,10 +61,12 @@ Every MCP scanner we source-verified uses text patterns, regex, or text classifi
 |---|---|---|---|---|
 | **Enterprise cloud scanner** | Lakera, Azure Prompt Shields, Google Model Armor, AWS Bedrock Guardrails, Cisco, HiddenLayer | Send prompt / tool call / output to their cloud API | You don't know what model they use or how to verify results; requires uploading your content | **Runs locally.** No upload. Benchmark scripts, model artifacts, and datasets are public and reproducible. |
 | **MCP / agent scanner** | Snyk Agent Scan, Invariant MCP-Scan, MEDUSA, ClawGuard | Mostly static rules, pattern matching, metadata scan, proxy, policy checks; some call vendor APIs | Fast and practical, but fundamentally "read the text / rules / known patterns" | **Activation probe.** Reads what the model *understood* from the tool description, not the text itself. |
-| **Text classifier** | ProtectAI DeBERTa, Meta Prompt Guard | Classify text as benign / injection / jailbreak | Learns text patterns; fails when words are the same but intent differs | Same-words benchmark: IntentProbe **96.5% F1** vs DeBERTa **0% F1**. |
+| **Text classifier** | ProtectAI DeBERTa, Meta Prompt Guard | Classify text as benign / injection / jailbreak | Learns text patterns; fails when words are the same but intent differs | Same-words benchmark: IntentProbe **96.6% F1** vs DeBERTa **0% F1**. |
 | **LLM-as-judge** | NeMo self-check, OpenAI Guardrails, Promptfoo grader | Ask another LLM: "is this poisoned?" | Expensive, slow, burns tokens; non-deterministic; the judge LLM can be fooled by the same poisoning | **Fixed local artifact.** Same input always gets the same deterministic score. |
 | **Red-team / eval framework** | garak, Giskard, Promptfoo red team | Generate attacks, test if app/model breaks | Great for audits, but not a "scan before install" daily workflow | IntentProbe is a **CLI scanner + runtime hook** — blocks before install and before each tool call. |
 | **IntentProbe** | **Us** | Small local model reads tool description, extract layers 13-15 activations, probe classifies intent | v0 still improving wild-data generalization | **First product-shaped activation-probe scanner for MCP/tool poisoning.** Local, reproducible, fundamentally different from text scanning. |
+
+Detailed source-backed comparison: [docs/COMPETITIVE_LANDSCAPE.md](docs/COMPETITIVE_LANDSCAPE.md)
 
 ## Benchmarks
 
@@ -96,8 +101,8 @@ number is reproducible from `research/`.
 
 | Test | IntentProbe | Opponent / baseline | Takeaway |
 |---|---|---|---|
-| MCPTox held-out (n=249) | recall 100%, F1 99.3% | Snyk DeBERTa recall 19.9%, F1 33.0% | Clear win |
-| Same-words matched (n=86) | F1 96.6% | Snyk DeBERTa F1 0% | Same words, different intent, text scanner blind |
+| MCPTox held-out (n=249) | recall 100%, F1 99.3% | DeBERTa text baseline recall 19.9%, F1 33.0% | Clear win |
+| Same-words matched (n=86) | F1 96.6% | DeBERTa text baseline F1 0% | Same words, different intent, text scanner blind |
 | Curated family holdout (n=76) | Qwen macro F1 0.829 | TF-IDF macro F1 0.823 | Qwen slight edge |
 | RouteGuard external (n=2,900) | F1 0.513, recall 0.415 | TF-IDF F1 0.172, recall 0.107 | External transfer: 4x better |
 | Hard-block policy (n=2,900) | Block precision 1.000, clean FPR 0.000 | -- | Zero false positives on clean tools |
@@ -191,7 +196,8 @@ intentprobe scan-path ./my-mcp-package --fail-on block
 
 ## Setup: Runtime Hook
 
-Scan tool calls **as they happen** inside Claude Code. The model stays warm in memory for sub-second latency.
+Scan tool calls **as they happen** inside Claude Code. For hosts that can keep a
+process open, `serve-jsonl` keeps the model warm for low-latency scans.
 
 **Step 1:** Add to your Claude Code `settings.json` or `.claude/settings.json`:
 
@@ -200,7 +206,7 @@ Scan tool calls **as they happen** inside Claude Code. The model stays warm in m
   "hooks": {
     "PreToolUse": [
       {
-        "command": "intentprobe runtime scan --input-format jsonl --fail-on block",
+        "command": "intentprobe runtime scan --stdin --input-format json --fail-on block",
         "timeout": 10000
       }
     ]
@@ -223,7 +229,7 @@ Scan tool calls **as they happen** inside Claude Code. The model stays warm in m
   │       ├──→ warn   ──→ logged, tool still executes           │
   │       └──→ block  ──→ tool call STOPPED (exit code 2)       │
   │                                                             │
-  │  Model stays warm via JSONL protocol. <1s per scan.         │
+  │  For warm-process mode, use runtime serve-jsonl.            │
   └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -268,7 +274,11 @@ For the full event schema and JSONL protocol, see [docs/RUNTIME_HOOKS.md](docs/R
 
 ## The story
 
-I built this after source-reading Snyk's shipped MCP scanner and finding it uses a DeBERTa text classifier that scores 0% recall on matched-vocabulary tool poisoning. The entire category of MCP scanners relies on text patterns. None of them read model internals.
+I built this after source-reading the strongest public MCP scanner path I could
+reproduce locally: a DeBERTa text-classifier baseline that scores 0% recall on
+matched-vocabulary tool poisoning. Current vendor API backends are opaque; this
+repo publishes the benchmark path and scanner artifact. None of the public MCP
+scanner sources/docs we checked read model internals.
 
 IntentProbe is a different approach: run the description through a small model, read the activations, and train a probe on the signal that encodes intent. The research paper behind this is [published on Zenodo](https://doi.org/10.5281/zenodo.19990741). The probe weights are 22 KB. The benchmarks are open. Run them yourself.
 

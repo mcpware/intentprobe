@@ -34,10 +34,10 @@ The benchmark punchline:
 
 - Matched poisoning pairs, same vocabulary but different intent:
   IntentProbe-style activation probe: **96.5-97%**.
-  Snyk's shipped DeBERTa prompt-injection classifier: **0% recall**.
+  Snyk/Invariant-style DeBERTa text-classifier baseline: **0% recall**.
 - MCPTox same held-out test split:
   activation probe: **99.2% accuracy / 100% poisoned recall**.
-  Snyk DeBERTa: **52.6% accuracy / 19.9% poisoned recall**.
+  DeBERTa text-classifier baseline: **52.6% accuracy / 19.9% poisoned recall**.
 - External-transfer stress test with the current Qwen2.5-0.5B scanner lane:
   Qwen activation probe: **0.513 F1 / 0.415 recall**.
   TF-IDF logistic baseline: **0.172 F1 / 0.107 recall**.
@@ -89,6 +89,11 @@ or tool packages. The most useful replies are:
 Please redact secrets before posting samples. If you can break it with a small
 repro, post it. That is exactly how this scanner gets better.
 
+Competitor landscape:
+`docs/COMPETITIVE_LANDSCAPE.md` compares this against cloud/API guardrails,
+Snyk/Invariant-style MCP scanners, local rule scanners, text classifiers,
+LLM-as-judge guardrails, and red-team frameworks.
+
 ## Short reply: what is different from regex?
 
 Regex and keyword scanners look at surface text. IntentProbe reads a small
@@ -116,10 +121,40 @@ over.
 
 ## Short reply: why compare against Snyk DeBERTa?
 
-Because it is a real shipped prompt-injection classifier in an agent scanner,
-not a toy regex baseline. It fires correctly on classic prompt injection, but it
-is out-of-distribution on subtle tool poisoning. On same-vocabulary poisoning
-pairs it caught 0%; the activation-probe method was around 96.5-97%.
+Because it is the strongest source-verified Snyk/Invariant-style
+text-classifier baseline we could reproduce locally, not a toy regex baseline.
+It fires correctly on classic prompt injection, but it is out-of-distribution on
+subtle tool poisoning. On same-vocabulary poisoning pairs it caught 0%; the
+activation-probe method was around 96.5-97%.
+
+## Short reply: what about Lakera, Azure, Google, AWS, Pangea, etc.?
+
+Those are real enterprise guardrails, but most are cloud/API controls. They
+usually ask you to send prompts, tool data, documents, or outputs to a vendor
+backend. The public docs describe features and configuration, but they do not
+give you a local detector artifact plus a reproducible MCP/tool-poisoning
+benchmark you can rerun.
+
+IntentProbe is narrower, but it is local and inspectable.
+
+## Short reply: what about Snyk, MEDUSA, Sunglasses, Armorer, ClawGuard, etc.?
+
+That category is the closest product category: scan-before-install and runtime
+tool-boundary security. The difference is signal. Public material for those
+tools is mainly rules, patterns, policy checks, proxies, redaction, fast local
+scoring, or vendor/API verification.
+
+IntentProbe's core signal is the activation state of a small local model after
+it has processed the tool description.
+
+## Short reply: why not just use an LLM judge?
+
+LLM judges are useful, but they are expensive and unstable as a hot-path scanner.
+You are asking another model for an opinion every time. That adds tokens,
+latency, and model/prompt drift.
+
+IntentProbe runs a small local model and returns a deterministic probe score for
+a fixed scanner artifact.
 
 ## Short reply: does it upload my code?
 
