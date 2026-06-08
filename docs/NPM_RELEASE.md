@@ -63,3 +63,12 @@ automation token before this can go live.
 
 The dry-run publish can still show the package tarball and publish target, but
 the real publish requires npm auth.
+
+Update from 2026-06-08:
+
+- PyPI `intentprobe==0.1.0` is live and passed a fresh install smoke.
+- The npm token from the credential vault decrypted successfully, but
+  `npm whoami` returned `E401 Unauthorized`.
+- Do not retry npm publish with the same token. Create or refresh an npm
+  automation token, then rerun `npm whoami` and `npm publish ./npm --access
+  public`.

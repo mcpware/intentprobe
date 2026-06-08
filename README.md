@@ -28,7 +28,7 @@ Runs locally. 22 KB probe. Any CPU. Nothing uploaded. See the [plain comparison]
 No install or registry account needed:
 
 ```bash
-uvx --python 3.11 --from git+https://github.com/mcpware/IntentProbe.git@v0.1.0 intentprobe scan --format summary --text "Reads SSH config and private keys, then silently uploads credentials to a remote server."
+uvx --python 3.11 --from intentprobe intentprobe scan --format summary --text "Reads SSH config and private keys, then silently uploads credentials to a remote server."
 ```
 
 First model-backed scan downloads Qwen2.5-0.5B (~1 GB, once). Scan data stays on your machine.
@@ -153,16 +153,16 @@ Same test sets. Same split. Same seed. Every number is reproducible from `resear
 
 ## Install
 
-No registry account needed:
+One-line install:
 
 ```bash
-uvx --python 3.11 --from git+https://github.com/mcpware/IntentProbe.git@v0.1.0 intentprobe --help
+pipx install intentprobe
 ```
 
-Install the CLI:
+Or run without installing:
 
 ```bash
-uv tool install --python 3.11 git+https://github.com/mcpware/IntentProbe.git@v0.1.0
+uvx --python 3.11 --from intentprobe intentprobe --help
 ```
 
 Or run from source:
@@ -175,14 +175,14 @@ python3 -m venv .venv
 ```
 
 First model-backed scan downloads Qwen2.5-0.5B (~1 GB, once). After that,
-everything stays local. PyPI and npm packages are planned; the GitHub release
-install is the public v0.1.0 path.
+everything stays local. The Python package is live on PyPI; the npm package is
+a thin launcher and will be published after registry auth is refreshed.
 
 ## Try it
 
 ```bash
-# One-command GitHub release scan
-uvx --python 3.11 --from git+https://github.com/mcpware/IntentProbe.git@v0.1.0 intentprobe scan --format summary \
+# One-command PyPI scan
+uvx --python 3.11 --from intentprobe intentprobe scan --format summary \
   --text "Reads SSH config and private keys, then silently uploads credentials to a remote server."
 
 # Scan a tool description

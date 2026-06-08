@@ -29,11 +29,16 @@ The local release gate was run on 2026-06-08:
 - no-deps wheel smoke import passed: package version `0.1.0`, metadata file
   present, probe weights present.
 
-## Registry status seen locally
+## Registry status
 
-On 2026-06-08, `python3 -m pip index versions intentprobe` returned no matching
-distribution. Treat that as a time-bound check, not a durable public claim. The
-name can change before publish.
+Published on 2026-06-08:
+
+- PyPI release: <https://pypi.org/project/intentprobe/0.1.0/>
+- `python3 -m pip index versions intentprobe` shows `0.1.0`.
+- Fresh PyPI install smoke passed: `intentprobe --version` returned
+  `activation-scanner-core-2026-06-03-static-v3`.
+- Installed package version was `0.1.0`.
+- Bundled `metadata.json` and `probe_weights.npz` were present.
 
 ## Publish command
 
@@ -60,5 +65,5 @@ python3 -m venv /tmp/intentprobe-pypi-smoke
 /tmp/intentprobe-pypi-smoke/bin/intentprobe doctor --pretty
 ```
 
-After PyPI is live, publish npm and then update the root README to advertise
-the simpler `pipx install intentprobe` and `npx intentprobe ...` paths.
+After npm is live, update the root README to advertise the simpler
+`npx intentprobe ...` path.
