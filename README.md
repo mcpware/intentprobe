@@ -120,28 +120,9 @@ Head-to-head, same test sets, same split, same seed. Every number is reproducibl
 
 ## How it works
 
-```
-  ┌─────────────────┐     ┌─────────────────────────┐     ┌──────────────┐
-  │                 │     │                         │     │              │
-  │  Tool           │────▶│  Qwen2.5-0.5B (frozen)  │────▶│  Layers      │
-  │  description    │     │  494M params, any CPU    │     │  13, 14, 15  │
-  │                 │     │                         │     │              │
-  └─────────────────┘     └─────────────────────────┘     └──────┬───────┘
-                                                                 │
-                                                        Activations (2,688 dim)
-                                                                 │
-                                                                 ▼
-                            ┌────────────────────┐     ┌──────────────────┐
-                            │                    │     │                  │
-                            │  Trained probe     │────▶│  allow / warn /  │
-                            │  22 KB, logreg     │     │  block           │
-                            │                    │     │                  │
-                            └────────────────────┘     └──────────────────┘
-                                      +
-                          Static regex corroboration
-```
-
-Under a second per description. No GPU. Nothing leaves your machine.
+<p align="center">
+  <img src="docs/how-it-works.png" width="700" alt="How IntentProbe works: tool description → frozen model → slice open layers 13-15 → 22KB probe → allow/warn/block" />
+</p>
 
 ## Install
 
