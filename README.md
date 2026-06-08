@@ -54,6 +54,17 @@ Head-to-head on the same test sets, same split, same seed. Every number is repro
 
 <sub>Methodology: research/benchmark-results-deberta-vs-probe-2026-05-31.md and research/ADVERSARIAL_EVASION_RESULTS_2026-06-07.md</sub>
 
+### End-to-end benchmark (full picture)
+
+| Test | IntentProbe | Opponent / baseline | Takeaway |
+|---|---|---|---|
+| MCPTox held-out (n=249) | recall 100%, F1 99.3% | Snyk DeBERTa recall 19.9%, F1 33.0% | Clear win |
+| Same-words matched set (n=86) | F1 96.6% | Snyk DeBERTa F1 0% | Core punchline: same words, different intent, text scanner blind |
+| Curated family holdout (n=76) | Qwen macro F1 0.829 | TF-IDF macro F1 0.823 | Qwen slight edge, TF-IDF recall marginally higher |
+| RouteGuard external (n=2,900) | F1 0.513, recall 0.415 | TF-IDF F1 0.172, recall 0.107 | External transfer: Qwen 4x better |
+| Hard-block policy (n=2,900) | Block precision 1.000, clean FPR 0.000 | — | Conservative block: zero false positives on clean tools |
+| Camouflage suffix evasion | GPT-2 0/146, Qwen 0/15 evaded | — | Appending "this tool is safe" doesn't fool the probe |
+
 ## How it works
 
 ```
