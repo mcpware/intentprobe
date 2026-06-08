@@ -293,7 +293,6 @@ For the full event schema and JSONL protocol, see [docs/RUNTIME_HOOKS.md](docs/R
   Where it's still improving:
   ⚠️  Novel attack families not in training                       →  ~41% (but 4x better than text classifiers at 10.7%)
   ⚠️  Gradient-based white-box attacks                            →  untested
-  ❌ It flags for a human. It does not silently "fix" tools.
 ```
 
 ## The story
