@@ -19,6 +19,12 @@
 
 ---
 
+## How it works
+
+<p align="center">
+  <img src="docs/how-it-works.png" width="700" alt="How IntentProbe works: tool description → frozen model → slice open layers 13-15 → 22KB probe → allow/warn/block" />
+</p>
+
 ## The problem
 
 ```
@@ -101,12 +107,6 @@ Head-to-head, same test sets, same split, same seed. Every number is reproducibl
 > **Based on: [Can Model Internals Detect MCP Tool Poisoning That Text Analysis Cannot?](https://doi.org/10.5281/zenodo.19990741)**
 >
 > Five rounds of experiments, each removing a text-level shortcut. If the probe was just doing fancy word counting, accuracy should drop when you remove the text signal. It never did. TF-IDF went from 93% to 30%. The activation probe stayed above 93% throughout. The activations contain a signal that text surfaces don't.
-
-## How it works
-
-<p align="center">
-  <img src="docs/how-it-works.png" width="700" alt="How IntentProbe works: tool description → frozen model → slice open layers 13-15 → 22KB probe → allow/warn/block" />
-</p>
 
 ## Install
 
