@@ -22,7 +22,9 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 - [x] **8. Product runtime boundary.** Canonical scanner runtime moved to `intentprobe/scanner/`; default probe artifact ships with the package. Old `research.activation_scanner_*` modules remain compatibility wrappers so reproducibility commands keep working.
 - [x] **9. Filesystem target scanner.** `intentprobe scan-path` scans local package folders, MCP configs, Claude Code skill folders, `package.json`, `SKILL.md`, README files, and MCP/tool/skill JSON. This is the first stranger-usable install-before-you-trust-it shape.
 - [x] **10. Public launch hygiene.** Honest README with benchmark table, local privacy note, sample reporting guide, GitHub issue templates, SECURITY policy, package build gate, and Reddit launch draft.
-- [ ] **11. First public feedback loop.** Post publicly, ask users to scan real MCP servers / skills / packages, triage missed detections and false positives into the next data curriculum.
+- [x] **11. CI gate preview.** Root `action.yml` lets a repo run IntentProbe from GitHub Actions with `uses: mcpware/IntentProbe@main`; docs live in `docs/GITHUB_ACTION.md`.
+- [ ] **12. First public feedback loop.** Post publicly, ask users to scan real MCP servers / skills / packages, triage missed detections and false positives into the next data curriculum.
+- [ ] **13. v0.2 demo pack.** Follow `docs/V0_2_DEMO_PACK.md`: demo repo, short scan video, runtime receipt demo, action verification, and buyer-grade evidence packet.
 
 ## Key technical facts (do not relearn these)
 
@@ -39,6 +41,8 @@ Backed by research: a 60-rule regex scanner catches **0 / 485** on the MCPTox be
 - Product CLI wrappers: `intentprobe/cli.py` and `intentprobe/hook.py`.
 - Scanner runtime: `intentprobe/scanner/core.py`, `intentprobe/scanner/cli.py`, and `intentprobe/scanner/hook.py`.
 - Filesystem target extraction: `intentprobe/scanner/targets.py`.
+- GitHub Action metadata: `action.yml`.
+- v0.2 demo pack living plan: `docs/V0_2_DEMO_PACK.md`.
 - Default shipped probe artifact: `intentprobe/scanner/artifacts/qwen-pooled-curated-core-l13-15-v2/`.
 - Research compatibility wrappers: `research/activation_scanner_core.py`, `research/activation_scanner_cli.py`, and `research/activation_scanner_hook.py`.
 - Benchmark harness: `research/benchmarks/`.

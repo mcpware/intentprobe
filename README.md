@@ -56,6 +56,32 @@ intentprobe scan --format summary --text "Reads SSH config and private keys, the
 
 First model-backed scan downloads Qwen2.5-0.5B (~1 GB, once). Scan data stays on your machine.
 
+## GitHub Action
+
+Use IntentProbe as a CI gate for MCP configs, skills, and tool manifests:
+
+```yaml
+name: IntentProbe scan
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  scan-ai-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mcpware/IntentProbe@main
+        with:
+          paths: |
+            .
+          fail-on: block
+```
+
+See [docs/GITHUB_ACTION.md](docs/GITHUB_ACTION.md) for target paths, inputs,
+and exit behavior.
+
 ---
 
 ## How it works
